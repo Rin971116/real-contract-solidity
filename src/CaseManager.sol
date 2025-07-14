@@ -6,21 +6,20 @@ import "./Governance.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // abstract 表示這個合約不能直接部署，只能再被其他合約繼承
-abstract contract CaseManager is Governance, ICaseManager { 
+abstract contract CaseManager is Governance, ICaseManager {
     // 使用 SafeERC20 庫來安全地操作 ERC20 代幣
     // 這是一個 OpenZeppelin 提供的安全代幣操作庫
     using SafeERC20 for IERC20;
 
     uint256 public currentCaseNum;
-    
+
     mapping(uint256 => ICaseManager.Case) public cases;
-    
-    mapping(uint256 => ICaseManager.CancelCaseRequest)
-        public cancelCaseRequests;
+
+    mapping(uint256 => ICaseManager.CancelCaseRequest) public cancelCaseRequests;
 
     // 添加案件
     function addCases(ICaseManager.CaseInit[] calldata _cases) public virtual {
-        for (uint i = 0; i < _cases.length; i++) {
+        for (uint256 i = 0; i < _cases.length; i++) {
             _addCase(_cases[i]);
         }
     }
@@ -35,11 +34,10 @@ abstract contract CaseManager is Governance, ICaseManager {
         require(_case.participantA != address(0), "Participant A cannot be zero address");
         require(_case.participantB != address(0), "Participant B cannot be zero address");
         require(_case.participantA != _case.participantB, "Participants cannot be the same");
-        
+
         // 檢查平手時的勝者必須是參與者之一
         require(
-            _case.winnerIfEqualVotes == _case.participantA ||
-            _case.winnerIfEqualVotes == _case.participantB,
+            _case.winnerIfEqualVotes == _case.participantA || _case.winnerIfEqualVotes == _case.participantB,
             "Winner if equal votes must be a participant"
         );
 
@@ -75,13 +73,10 @@ abstract contract CaseManager is Governance, ICaseManager {
     }
 
     // 投票結果
-    function _getCaseResult(
-        uint256 _caseNum
-    ) internal view returns (CaseResult memory) {
+    function _getCaseResult(uint256 _caseNum) internal view returns (CaseResult memory) {
         require(
-            cases[_caseNum].status == CaseStatus.Voting ||
-            cases[_caseNum].status == CaseStatus.WaitingForExecution ||
-            cases[_caseNum].status == CaseStatus.Executed,
+            cases[_caseNum].status == CaseStatus.Voting || cases[_caseNum].status == CaseStatus.WaitingForExecution
+                || cases[_caseNum].status == CaseStatus.Executed,
             "Case is not voting or waiting for execution or executed"
         );
 
@@ -93,8 +88,7 @@ abstract contract CaseManager is Governance, ICaseManager {
 
         caseResult.voteCountA = _case.voterVotes[_case.participantA];
         caseResult.voteCountB = _case.voterVotes[_case.participantB];
-        caseResult.voteEnded =
-            _case.votingDuration + _case.votingStartTime < block.timestamp;
+        caseResult.voteEnded = _case.votingDuration + _case.votingStartTime < block.timestamp;
         caseResult.allocationMode = _case.allocationMode;
 
         if (caseResult.voteCountA > caseResult.voteCountB) {
@@ -109,29 +103,17 @@ abstract contract CaseManager is Governance, ICaseManager {
     }
 
     // 存入保證金
-    function _stakeCompensation(
-        uint256 _caseNum,
-        IERC20 _compensationToken,
-        bool _payA
-    ) internal {
+    function _stakeCompensation(uint256 _caseNum, IERC20 _compensationToken, bool _payA) internal {
         if (_payA) {
-            require(
-                cases[_caseNum].isPaidA == false,
-                "Participant A has already paid"
-            );
+            require(cases[_caseNum].isPaidA == false, "Participant A has already paid");
             cases[_caseNum].isPaidA = true;
         } else {
-            require(
-                cases[_caseNum].isPaidB == false,
-                "Participant B has already paid"
-            );
+            require(cases[_caseNum].isPaidB == false, "Participant B has already paid");
             cases[_caseNum].isPaidB = true;
         }
 
         // transferFrom compensationToken to this contract
-        uint256 amount = _payA
-            ? cases[_caseNum].compensationA
-            : cases[_caseNum].compensationB;
+        uint256 amount = _payA ? cases[_caseNum].compensationA : cases[_caseNum].compensationB;
 
         _compensationToken.safeTransferFrom(msg.sender, address(this), amount);
 
@@ -142,31 +124,23 @@ abstract contract CaseManager is Governance, ICaseManager {
 
     // 發起投票
     function _startCaseVoting(uint256 _caseNum) internal {
-        require(
-            cases[_caseNum].status == CaseStatus.Activated,
-            "Case is not started"
-        );
+        require(cases[_caseNum].status == CaseStatus.Activated, "Case is not started");
 
         //check voting duration is greater than 0
-        require(
-            cases[_caseNum].votingDuration > 0,
-            "Voting duration must be greater than 0"
-        );
+        require(cases[_caseNum].votingDuration > 0, "Voting duration must be greater than 0");
 
         cases[_caseNum].status = CaseStatus.Voting;
         cases[_caseNum].votingStartTime = block.timestamp;
     }
 
     // 執行案件
-    function _executeCase(
-        uint256 _caseNum
-    ) internal {
+    function _executeCase(uint256 _caseNum) internal {
         require(
-            cases[_caseNum].status == CaseStatus.WaitingForExecution ||
-                (cases[_caseNum].status == CaseStatus.Voting &&
-                    block.timestamp >
-                    cases[_caseNum].votingStartTime +
-                        cases[_caseNum].votingDuration),
+            cases[_caseNum].status == CaseStatus.WaitingForExecution
+                || (
+                    cases[_caseNum].status == CaseStatus.Voting
+                        && block.timestamp > cases[_caseNum].votingStartTime + cases[_caseNum].votingDuration
+                ),
             "Case is not waiting for execution"
         );
 
@@ -211,19 +185,13 @@ abstract contract CaseManager is Governance, ICaseManager {
         cases[_caseNum].winner = address(0);
     }
 
-    function _cancelCase(
-        uint256 _caseNum
-    ) internal virtual returns (bool sweepCompensation) {
+    function _cancelCase(uint256 _caseNum) internal virtual returns (bool sweepCompensation) {
         require(
-            cases[_caseNum].status == CaseStatus.Activated ||
-                cases[_caseNum].status == CaseStatus.Inactivated,
+            cases[_caseNum].status == CaseStatus.Activated || cases[_caseNum].status == CaseStatus.Inactivated,
             "Case is not activated or inactivated"
         );
 
-        require(
-            cancelCaseRequests[_caseNum].approved[msg.sender] == false,
-            "Sender has already approved"
-        );
+        require(cancelCaseRequests[_caseNum].approved[msg.sender] == false, "Sender has already approved");
 
         cancelCaseRequests[_caseNum].approved[msg.sender] = true;
         cancelCaseRequests[_caseNum].approveCount++;
@@ -244,21 +212,15 @@ abstract contract CaseManager is Governance, ICaseManager {
         return cases[caseNum].status;
     }
 
-    function getCaseDescription(
-        uint256 caseNum
-    ) public view returns (string memory) {
+    function getCaseDescription(uint256 caseNum) public view returns (string memory) {
         return cases[caseNum].caseDescription;
     }
 
-    function getCaseCompensationA(
-        uint256 caseNum
-    ) public view returns (uint256) {
+    function getCaseCompensationA(uint256 caseNum) public view returns (uint256) {
         return cases[caseNum].compensationA;
     }
 
-    function getCaseCompensationB(
-        uint256 caseNum
-    ) public view returns (uint256) {
+    function getCaseCompensationB(uint256 caseNum) public view returns (uint256) {
         return cases[caseNum].compensationB;
     }
 
@@ -266,9 +228,7 @@ abstract contract CaseManager is Governance, ICaseManager {
         return cases[caseNum].winner;
     }
 
-    function getCaseVotingDuration(
-        uint256 caseNum
-    ) public view returns (uint256) {
+    function getCaseVotingDuration(uint256 caseNum) public view returns (uint256) {
         return cases[caseNum].votingDuration;
     }
 
@@ -276,10 +236,7 @@ abstract contract CaseManager is Governance, ICaseManager {
         return cases[caseNum].voters.length;
     }
 
-    function getCaseVoterVotes(
-        uint256 caseNum,
-        address voter
-    ) public view returns (uint256) {
+    function getCaseVoterVotes(uint256 caseNum, address voter) public view returns (uint256) {
         return cases[caseNum].voterVotes[voter];
     }
 

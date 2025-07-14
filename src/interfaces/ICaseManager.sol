@@ -103,32 +103,19 @@ interface ICaseManager {
     // returns (CaseStatus)代表這個函數回傳一個CaseStatus枚舉
     function getCaseStatus(uint256 caseNum) external view returns (CaseStatus);
 
-    function getCaseDescription(
-        uint256 caseNum
-    ) external view returns (string memory);
+    function getCaseDescription(uint256 caseNum) external view returns (string memory);
 
-    function getCaseCompensationA(
-        uint256 caseNum
-    ) external view returns (uint256);
+    function getCaseCompensationA(uint256 caseNum) external view returns (uint256);
 
-    function getCaseCompensationB(
-        uint256 caseNum
-    ) external view returns (uint256);
+    function getCaseCompensationB(uint256 caseNum) external view returns (uint256);
 
     function getCaseWinner(uint256 caseNum) external view returns (address);
 
-    function getCaseVotingDuration(
-        uint256 caseNum
-    ) external view returns (uint256);
+    function getCaseVotingDuration(uint256 caseNum) external view returns (uint256);
 
-    function getCaseVotersCount(
-        uint256 caseNum
-    ) external view returns (uint256);
+    function getCaseVotersCount(uint256 caseNum) external view returns (uint256);
 
-    function getCaseVoterVotes(
-        uint256 caseNum,
-        address voter
-    ) external view returns (uint256);
+    function getCaseVoterVotes(uint256 caseNum, address voter) external view returns (uint256);
 
     function getCaseIsPaidA(uint256 caseNum) external view returns (bool);
 }

@@ -53,13 +53,13 @@ contract DeployScript is Script {
         // 設定兩個測試錢包地址
         address testParticipantA = address(0x57a0cd579B0fb24f3282F69680eeE85E3e5bCD68);
         address testParticipantB = address(0x137C941D1097488cc9B454c362c768B7A837DA22);
-        
+
         // 轉移測試幣給測試錢包
         fakeERC20.transfer(testParticipantA, 10000000 * 10 ** 18);
         fakeERC20.transfer(testParticipantB, 10000000 * 10 ** 18);
         fakeERC20.transfer(testVoter, 10000000 * 10 ** 18);
         console.log("Transferred tokens to example participants");
-        
+
         // 轉移測試幣給 部署者錢包
         fakeERC20.transfer(deployer, 10000000 * 10 ** 18);
         console.log("Transferred tokens to deployer (your wallet)");
@@ -79,14 +79,8 @@ contract DeployScript is Script {
         console.log("Test Participant A:", testParticipantA);
         console.log("Test Participant B:", testParticipantB);
         console.log("\nToken Balances:");
-        console.log(
-            "Example Participant A Balance:",
-            fakeERC20.balanceOf(testParticipantA)
-        );
-        console.log(
-            "Example Participant B Balance:",
-            fakeERC20.balanceOf(testParticipantB)    
-        );
+        console.log("Example Participant A Balance:", fakeERC20.balanceOf(testParticipantA));
+        console.log("Example Participant B Balance:", fakeERC20.balanceOf(testParticipantB));
         console.log("Deployer Balance:", fakeERC20.balanceOf(deployer));
         console.log("\nContract Parameters:");
         console.log("Fee Rate for Stake Compensation: 1%");

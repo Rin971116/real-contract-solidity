@@ -5,10 +5,7 @@ abstract contract Governance {
     address public governance;
 
     modifier onlyGovernance() {
-        require(
-            msg.sender == governance,
-            "Only the governance can call this function"
-        );
+        require(msg.sender == governance, "Only the governance can call this function");
         _;
     }
 

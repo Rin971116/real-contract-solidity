@@ -67,14 +67,8 @@ contract RealContractTest is Test {
     function test_Deployment() public view {
         //assert equal 判斷值是否相等，相等才繼續執行，不相等則會跳出自動生成的錯誤訊息
         assertEq(realContract.governance(), owner);
-        assertEq(
-            address(realContract.compensationToken()),
-            address(compensationToken)
-        );
-        assertEq(
-            realContract.feeRateForStakeCompensation(),
-            feeRateForStakeCompensation
-        );
+        assertEq(address(realContract.compensationToken()), address(compensationToken));
+        assertEq(realContract.feeRateForStakeCompensation(), feeRateForStakeCompensation);
         assertEq(realContract.feeRateForExecuteCase(), feeRateForExecuteCase);
         assertTrue(realContract.isRunning());
     }
@@ -94,10 +88,7 @@ contract RealContractTest is Test {
         });
         realContract.addCase(newCase);
         assertEq(realContract.getCaseName(0), "Test Case");
-        assertEq(
-            uint256(realContract.getCaseStatus(0)),
-            uint256(ICaseManager.CaseStatus.Inactivated)
-        );
+        assertEq(uint256(realContract.getCaseStatus(0)), uint256(ICaseManager.CaseStatus.Inactivated));
     }
 
     // 測試賠償金支付
@@ -119,11 +110,7 @@ contract RealContractTest is Test {
             realContract.addCase(newCase);
             compensationToken.approve(address(realContract), type(uint256).max);
             vm.expectEmit(true, true, false, false);
-            emit IRealContract.CaseStaked(
-                0,
-                participantA,
-                newCase.compensationA
-            );
+            emit IRealContract.CaseStaked(0, participantA, newCase.compensationA);
             realContract.stakeCompensation(0, true);
             vm.stopPrank();
         }
@@ -337,10 +324,7 @@ contract RealContractTest is Test {
         vm.expectEmit(true, true, false, false);
         emit IRealContract.CaseExecuted(0, participantA);
         realContract.executeCase(0);
-        assertEq(
-            uint256(realContract.getCaseStatus(0)),
-            uint256(ICaseManager.CaseStatus.Executed)
-        );
+        assertEq(uint256(realContract.getCaseStatus(0)), uint256(ICaseManager.CaseStatus.Executed));
         vm.stopPrank();
     }
 
@@ -381,10 +365,7 @@ contract RealContractTest is Test {
             realContract.cancelCase(0);
             vm.stopPrank();
         }
-        assertEq(
-            uint256(realContract.getCaseStatus(0)),
-            uint256(ICaseManager.CaseStatus.Abandoned)
-        );
+        assertEq(uint256(realContract.getCaseStatus(0)), uint256(ICaseManager.CaseStatus.Abandoned));
     }
 
     // 測試設置合約運行狀態
