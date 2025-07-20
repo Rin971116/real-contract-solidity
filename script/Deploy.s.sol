@@ -22,9 +22,13 @@ contract DeployScript is Script {
         // 開始廣播交易
         vm.startBroadcast(deployerPrivateKey);
 
-        // 部署假的ERC20
+        // 部署假的ERC20(保證金用測試幣)
         MockERC20 fakeERC20 = new MockERC20("FakeERC20", "FERC20");
         console.log("FakeERC20 deployed to:", address(fakeERC20));
+
+        // 部署投票用代幣
+        MockERC20 voteToken = new MockERC20("VoteToken", "VT");
+        console.log("VoteToken deployed to:", address(voteToken));
 
         // 部署 Voter 合約
         Voter voter = new Voter(deployer);
@@ -35,16 +39,17 @@ contract DeployScript is Script {
             deployer, // governance
             address(voter), // voter
             address(fakeERC20), // compensationToken
-            address(fakeERC20), // voteToken
+            address(voteToken), // voteToken
             100, // feeRateForStakeCompensation (1%)
             200, // feeRateForExecuteCase (2%)
-            100 // 100 wei
+            100 * 10 ** 18 // 100顆 vote tokens
         );
         console.log("RealContract deployed to:", address(realContract));
 
         // 添加投票者 測試錢包
         address testVoter = address(0x20Db3FD960194551325eBC1145562aEBdbD99F1a);
         voter.addVoter(testVoter);
+        console.log("Added testVoter as voter");
 
         // 添加投票者 部署者錢包
         voter.addVoter(deployer);
@@ -57,12 +62,16 @@ contract DeployScript is Script {
         // 轉移測試幣給測試錢包
         fakeERC20.transfer(testParticipantA, 10000000 * 10 ** 18);
         fakeERC20.transfer(testParticipantB, 10000000 * 10 ** 18);
-        fakeERC20.transfer(testVoter, 10000000 * 10 ** 18);
-        console.log("Transferred tokens to example participants");
+        console.log("Transferred fakeERC20 tokens to test participants");
 
-        // 轉移測試幣給 部署者錢包
+        // 轉移投票代幣給測試錢包
+        voteToken.transfer(testVoter, 10000000 * 10 ** 18);
+        console.log("Transferred vote tokens to testVoter");
+
+        // 轉移兩種測試幣給 部署者錢包
         fakeERC20.transfer(deployer, 10000000 * 10 ** 18);
-        console.log("Transferred tokens to deployer (your wallet)");
+        voteToken.transfer(deployer, 10000000 * 10 ** 18);
+        console.log("Transferred both tokens to deployer (your wallet)");
 
         // 停止廣播交易
         vm.stopBroadcast();
@@ -73,6 +82,7 @@ contract DeployScript is Script {
         console.log("Deployer:", deployer);
         console.log("\nContract Addresses:");
         console.log("FakeERC20:", address(fakeERC20));
+        console.log("VoteToken:", address(voteToken));
         console.log("Voter:", address(voter));
         console.log("RealContract:", address(realContract));
         console.log("\nParticipants:");

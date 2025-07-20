@@ -11,8 +11,6 @@ interface ICaseManager {
         Voting,
         //放棄
         Abandoned,
-        //等待執行
-        WaitingForExecution,
         //已執行
         Executed
     }
@@ -28,12 +26,17 @@ interface ICaseManager {
         // 參與者地址
         address participantA;
         address participantB;
-        // 賠償金額
+        // 需存入之金額
         uint256 compensationA;
         uint256 compensationB;
+        // 實際支付金額
+        uint256 existingCompensationA;
+        uint256 existingCompensationB;
         // 是否已支付
         bool isPaidA;
         bool isPaidB;
+        // 是否已執行
+        bool isExecuted;
         // 勝者
         address winner;
         // 狀態
@@ -48,8 +51,8 @@ interface ICaseManager {
         address[] voters;
         // 紀錄得票數
         mapping(address => uint256) voterVotes;
-        // 平手時的勝者
-        address winnerIfEqualVotes;
+        // 投票獎池
+        uint256 votePool;
         // 分配模式(0: 勝者全拿, 1: 按得票數比例分配)
         uint256 allocationMode;
     }
@@ -66,8 +69,6 @@ interface ICaseManager {
         // 賠償金額
         uint256 compensationA;
         uint256 compensationB;
-        // 平手時的勝者
-        address winnerIfEqualVotes;
         // voting duration
         uint256 votingDuration;
         // 分配模式(0: 勝者全拿, 1: 按得票數比例分配)
@@ -77,11 +78,16 @@ interface ICaseManager {
     struct CaseResult {
         // 案件編號
         uint256 caseNum;
+        // 案件狀態
+        CaseStatus caseStatus;
         // 勝者
         address currentWinner;
-        // 賠償金額
+        // 需存入之金額
         uint256 compensationA;
         uint256 compensationB;
+        // 已存入之金額
+        uint256 existingCompensationA;
+        uint256 existingCompensationB;
         // 得票數A
         uint256 voteCountA;
         // 得票數B

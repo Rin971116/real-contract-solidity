@@ -34,14 +34,8 @@ abstract contract CaseManager is Governance, ICaseManager {
         require(_case.participantA != address(0), "Participant A cannot be zero address");
         require(_case.participantB != address(0), "Participant B cannot be zero address");
         require(_case.participantA != _case.participantB, "Participants cannot be the same");
-
-        // 檢查平手時的勝者必須是參與者之一
-        require(
-            _case.winnerIfEqualVotes == _case.participantA || _case.winnerIfEqualVotes == _case.participantB,
-            "Winner if equal votes must be a participant"
-        );
-
-        // 檢查分配模式是否有效
+        require(_case.compensationA > 0 || _case.compensationB > 0, "Compensation must be greater than 0");
+        require(_case.votingDuration > 0, "Voting duration must be greater than 0");
         require(_case.allocationMode <= 1 || _case.allocationMode >= 0, "Invalid allocation mode");
 
         ICaseManager.Case storage newCase = cases[currentCaseNum];
@@ -60,7 +54,6 @@ abstract contract CaseManager is Governance, ICaseManager {
         if (_case.compensationB == 0) {
             newCase.isPaidB = true;
         }
-        newCase.winnerIfEqualVotes = _case.winnerIfEqualVotes;
         newCase.votingDuration = _case.votingDuration;
         newCase.allocationMode = _case.allocationMode;
         newCase.status = CaseStatus.Inactivated;
@@ -75,9 +68,8 @@ abstract contract CaseManager is Governance, ICaseManager {
     // 投票結果
     function _getCaseResult(uint256 _caseNum) internal view returns (CaseResult memory) {
         require(
-            cases[_caseNum].status == CaseStatus.Voting || cases[_caseNum].status == CaseStatus.WaitingForExecution
-                || cases[_caseNum].status == CaseStatus.Executed,
-            "Case is not voting or waiting for execution or executed"
+            cases[_caseNum].status == CaseStatus.Voting || cases[_caseNum].status == CaseStatus.Executed,
+            "Case is not voting or executed"
         );
 
         ICaseManager.Case storage _case = cases[_caseNum];
@@ -85,40 +77,46 @@ abstract contract CaseManager is Governance, ICaseManager {
         caseResult.caseNum = _case.caseNum;
         caseResult.compensationA = _case.compensationA;
         caseResult.compensationB = _case.compensationB;
-
+        caseResult.existingCompensationA = _case.existingCompensationA;
+        caseResult.existingCompensationB = _case.existingCompensationB;
+        caseResult.caseStatus = _case.status;
         caseResult.voteCountA = _case.voterVotes[_case.participantA];
         caseResult.voteCountB = _case.voterVotes[_case.participantB];
-        caseResult.voteEnded = _case.votingDuration + _case.votingStartTime < block.timestamp;
         caseResult.allocationMode = _case.allocationMode;
+        caseResult.voteEnded = _case.votingDuration + _case.votingStartTime < block.timestamp;
 
         if (caseResult.voteCountA > caseResult.voteCountB) {
             caseResult.currentWinner = _case.participantA;
         } else if (caseResult.voteCountA < caseResult.voteCountB) {
             caseResult.currentWinner = _case.participantB;
         } else {
-            caseResult.currentWinner = _case.winnerIfEqualVotes;
+            // 表示平手
+            caseResult.currentWinner = address(0);
         }
 
         return caseResult;
     }
 
     // 存入保證金
-    function _stakeCompensation(uint256 _caseNum, IERC20 _compensationToken, bool _payA) internal {
+    function _stakeCompensation(uint256 _caseNum, IERC20 _compensationToken, bool _payA, uint256 _amount) internal {
+        require(cases[_caseNum].status == CaseStatus.Activated || 
+                cases[_caseNum].status == CaseStatus.Inactivated, "Case is not activated or inactivated");
         if (_payA) {
-            require(cases[_caseNum].isPaidA == false, "Participant A has already paid");
+            cases[_caseNum].existingCompensationA += _amount;
+            if (cases[_caseNum].existingCompensationA >= cases[_caseNum].compensationA) {
             cases[_caseNum].isPaidA = true;
+            } 
         } else {
-            require(cases[_caseNum].isPaidB == false, "Participant B has already paid");
-            cases[_caseNum].isPaidB = true;
+            cases[_caseNum].existingCompensationB += _amount;
+            if (cases[_caseNum].existingCompensationB >= cases[_caseNum].compensationB) {
+                cases[_caseNum].isPaidB = true;
+            } 
         }
+        
+        _compensationToken.safeTransferFrom(msg.sender, address(this), _amount);
 
-        // transferFrom compensationToken to this contract
-        uint256 amount = _payA ? cases[_caseNum].compensationA : cases[_caseNum].compensationB;
-
-        _compensationToken.safeTransferFrom(msg.sender, address(this), amount);
-
-        if (cases[_caseNum].isPaidA && cases[_caseNum].isPaidB) {
-            cases[_caseNum].status = CaseStatus.Activated;
+        if (cases[_caseNum].status == CaseStatus.Inactivated && cases[_caseNum].isPaidA && cases[_caseNum].isPaidB) {
+            _updateCaseStatus(_caseNum, CaseStatus.Activated);
         }
     }
 
@@ -129,58 +127,24 @@ abstract contract CaseManager is Governance, ICaseManager {
         //check voting duration is greater than 0
         require(cases[_caseNum].votingDuration > 0, "Voting duration must be greater than 0");
 
-        cases[_caseNum].status = CaseStatus.Voting;
+        _updateCaseStatus(_caseNum, CaseStatus.Voting);
         cases[_caseNum].votingStartTime = block.timestamp;
     }
 
     // 執行案件
     function _executeCase(uint256 _caseNum) internal {
-        require(
-            cases[_caseNum].status == CaseStatus.WaitingForExecution
-                || (
-                    cases[_caseNum].status == CaseStatus.Voting
-                        && block.timestamp > cases[_caseNum].votingStartTime + cases[_caseNum].votingDuration
-                ),
-            "Case is not waiting for execution"
-        );
-
+        require(cases[_caseNum].status == CaseStatus.Voting, "Case is not voting");
         CaseResult memory caseResult = _getCaseResult(_caseNum);
-
         require(caseResult.voteEnded, "Case is not ended");
 
-        // 判決不作數的情況
-        if (caseResult.voteCountA == 0 && caseResult.voteCountB == 0) {
-            _rollbackCase(_caseNum);
-            return;
-        }
-
-        // 根據分配模式決定勝者
-        if (caseResult.allocationMode == 0) {
-            // 模式0: 勝者全拿
-            if (caseResult.voteCountA > caseResult.voteCountB) {
-                cases[_caseNum].winner = cases[_caseNum].participantA;
-            } else if (caseResult.voteCountA < caseResult.voteCountB) {
-                cases[_caseNum].winner = cases[_caseNum].participantB;
-            } else {
-                cases[_caseNum].winner = cases[_caseNum].winnerIfEqualVotes;
-            }
-        } else if (caseResult.allocationMode == 1) {
-            // 模式1: 按得票數比例分配 (這裡只記錄勝者，實際分配在 RealContract 中處理)
-            if (caseResult.voteCountA > caseResult.voteCountB) {
-                cases[_caseNum].winner = cases[_caseNum].participantA;
-            } else if (caseResult.voteCountA < caseResult.voteCountB) {
-                cases[_caseNum].winner = cases[_caseNum].participantB;
-            } else {
-                cases[_caseNum].winner = cases[_caseNum].winnerIfEqualVotes;
-            }
-        }
-
+        // 記錄最後勝者(可能為平手)，如果是平手則為address(0)
+        cases[_caseNum].winner = caseResult.currentWinner;
         cases[_caseNum].status = CaseStatus.Executed;
     }
 
     // 回滾案件
     function _rollbackCase(uint256 _caseNum) internal virtual {
-        cases[_caseNum].status = CaseStatus.Inactivated;
+        cases[_caseNum].status = CaseStatus.Activated;
         cases[_caseNum].votingStartTime = 0;
         cases[_caseNum].winner = address(0);
     }

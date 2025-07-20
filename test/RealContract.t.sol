@@ -82,7 +82,6 @@ contract RealContractTest is Test {
             participantB: participantB,
             compensationA: 100 * 10 ** 18,
             compensationB: 100 * 10 ** 18,
-            winnerIfEqualVotes: participantA,
             votingDuration: 1 days,
             allocationMode: 0
         });
@@ -103,7 +102,6 @@ contract RealContractTest is Test {
                 participantB: participantB,
                 compensationA: 100 * 10 ** 18,
                 compensationB: 100 * 10 ** 18,
-                winnerIfEqualVotes: participantA,
                 votingDuration: 1 days,
                 allocationMode: 0
             });
@@ -111,7 +109,7 @@ contract RealContractTest is Test {
             compensationToken.approve(address(realContract), type(uint256).max);
             vm.expectEmit(true, true, false, false);
             emit IRealContract.CaseStaked(0, participantA, newCase.compensationA);
-            realContract.stakeCompensation(0, true);
+            realContract.stakeCompensation(0, true, newCase.compensationA);
             vm.stopPrank();
         }
         assertTrue(realContract.getCaseIsPaidA(0));
@@ -127,15 +125,14 @@ contract RealContractTest is Test {
             participantB: participantB,
             compensationA: 100 * 10 ** 18,
             compensationB: 100 * 10 ** 18,
-            winnerIfEqualVotes: participantA,
             votingDuration: 1 days,
             allocationMode: 0
         });
         realContract.addCase(newCase);
         compensationToken.approve(address(realContract), type(uint256).max);
-        realContract.stakeCompensation(0, true);
+        realContract.stakeCompensation(0, true, newCase.compensationA);
         vm.expectRevert("Participant A has already paid");
-        realContract.stakeCompensation(0, true);
+        realContract.stakeCompensation(0, true, newCase.compensationA);
         vm.stopPrank();
     }
 
@@ -151,19 +148,18 @@ contract RealContractTest is Test {
                 participantB: participantB,
                 compensationA: 100 * 10 ** 18,
                 compensationB: 100 * 10 ** 18,
-                winnerIfEqualVotes: participantA,
                 votingDuration: 1 days,
                 allocationMode: 0
             });
             realContract.addCase(newCase);
             compensationToken.approve(address(realContract), type(uint256).max);
-            realContract.stakeCompensation(0, true);
+            realContract.stakeCompensation(0, true, newCase.compensationA);
             vm.stopPrank();
         }
         {
             vm.startPrank(participantB);
             compensationToken.approve(address(realContract), type(uint256).max);
-            realContract.stakeCompensation(0, false);
+            realContract.stakeCompensation(0, false, 100 * 10 ** 18);
             vm.stopPrank();
         }
         // 開始投票
@@ -189,19 +185,18 @@ contract RealContractTest is Test {
                 participantB: participantB,
                 compensationA: 100 * 10 ** 18,
                 compensationB: 100 * 10 ** 18,
-                winnerIfEqualVotes: participantA,
                 votingDuration: 1 days,
                 allocationMode: 0
             });
             realContract.addCase(newCase);
             compensationToken.approve(address(realContract), type(uint256).max);
-            realContract.stakeCompensation(0, true);
+            realContract.stakeCompensation(0, true, newCase.compensationA);
             vm.stopPrank();
         }
         {
             vm.startPrank(participantB);
             compensationToken.approve(address(realContract), type(uint256).max);
-            realContract.stakeCompensation(0, false);
+            realContract.stakeCompensation(0, false, 100 * 10 ** 18);
             vm.stopPrank();
         }
         // 開始投票
@@ -224,18 +219,17 @@ contract RealContractTest is Test {
             participantB: participantB,
             compensationA: 100 * 10 ** 18,
             compensationB: 100 * 10 ** 18,
-            winnerIfEqualVotes: participantA,
             votingDuration: 1 days,
             allocationMode: 0
         });
         realContract.addCase(newCase);
         compensationToken.approve(address(realContract), type(uint256).max);
-        realContract.stakeCompensation(0, true);
+        realContract.stakeCompensation(0, true, newCase.compensationA);
         vm.stopPrank();
 
         vm.startPrank(participantB);
         compensationToken.approve(address(realContract), type(uint256).max);
-        realContract.stakeCompensation(0, false);
+        realContract.stakeCompensation(0, false, 100 * 10 ** 18);
         vm.stopPrank();
 
         vm.prank(participantA);
@@ -260,19 +254,18 @@ contract RealContractTest is Test {
                 participantB: participantB,
                 compensationA: 100 * 10 ** 18,
                 compensationB: 100 * 10 ** 18,
-                winnerIfEqualVotes: participantA,
                 votingDuration: 1 days,
                 allocationMode: 0
             });
             realContract.addCase(newCase);
             compensationToken.approve(address(realContract), type(uint256).max);
-            realContract.stakeCompensation(0, true);
+            realContract.stakeCompensation(0, true, newCase.compensationA);
             vm.stopPrank();
         }
         {
             vm.startPrank(participantB);
             compensationToken.approve(address(realContract), type(uint256).max);
-            realContract.stakeCompensation(0, false);
+            realContract.stakeCompensation(0, false, 100 * 10 ** 18);
             vm.stopPrank();
         }
         console.log("check1");
@@ -297,19 +290,18 @@ contract RealContractTest is Test {
                 participantB: participantB,
                 compensationA: 100 * 10 ** 18,
                 compensationB: 100 * 10 ** 18,
-                winnerIfEqualVotes: participantA,
                 votingDuration: 1 days,
                 allocationMode: 0
             });
             realContract.addCase(newCase);
             compensationToken.approve(address(realContract), type(uint256).max);
-            realContract.stakeCompensation(0, true);
+            realContract.stakeCompensation(0, true, newCase.compensationA);
             vm.stopPrank();
         }
         {
             vm.startPrank(participantB);
             compensationToken.approve(address(realContract), type(uint256).max);
-            realContract.stakeCompensation(0, false);
+            realContract.stakeCompensation(0, false, 100 * 10 ** 18);
             vm.stopPrank();
         }
         vm.startPrank(participantA);
@@ -339,20 +331,19 @@ contract RealContractTest is Test {
                 participantA: participantA,
                 participantB: participantB,
                 compensationA: 100 * 10 ** 18,
-                compensationB: 100 * 10 ** 18,
-                winnerIfEqualVotes: participantA,
+                compensationB: 100 * 10 ** 18, 
                 votingDuration: 1 days,
                 allocationMode: 0
             });
             realContract.addCase(newCase);
             compensationToken.approve(address(realContract), type(uint256).max);
-            realContract.stakeCompensation(0, true);
+            realContract.stakeCompensation(0, true, newCase.compensationA);
             vm.stopPrank();
         }
         {
             vm.startPrank(participantB);
             compensationToken.approve(address(realContract), type(uint256).max);
-            realContract.stakeCompensation(0, false);
+            realContract.stakeCompensation(0, false, 100 * 10 ** 18);
             vm.stopPrank();
         }
         {

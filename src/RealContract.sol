@@ -88,32 +88,29 @@ contract RealContract is
     // 添加案件
     function addCases(CaseInit[] calldata _cases) public override onlyRunning {
         for (uint256 i = 0; i < _cases.length; i++) {
-            _checkCase(_cases[i]);
             _addCase(_cases[i]);
         }
     }
 
     // 添加案件
     function addCase(CaseInit calldata _case) public override onlyRunning {
-        _checkCase(_case);
         _addCase(_case);
     }
 
     // stake compensation
-    function stakeCompensation(uint256 _caseNum, bool _payA) public onlyRunning nonReentrant {
-        _stakeCompensation(_caseNum, compensationToken, _payA);
+    function stakeCompensation(uint256 _caseNum, bool _payA, uint256 _amount) public onlyRunning nonReentrant {
+        uint256 stakeFee = (_amount * feeRateForStakeCompensation) / 10000;
+        _stakeCompensation(_caseNum, compensationToken, _payA, _amount - stakeFee);
 
-        if (_payA && cases[_caseNum].compensationA > 0) {
+        if (_payA) {
             // 收取手續費
-            uint256 feeA = (cases[_caseNum].compensationA * feeRateForStakeCompensation) / 10000;
             // safeTransferFrom compensationToken to this contract
-            compensationToken.safeTransferFrom(msg.sender, address(this), feeA);
+            compensationToken.safeTransferFrom(msg.sender, address(this), stakeFee);
             emit CaseStaked(_caseNum, msg.sender, cases[_caseNum].compensationA);
-        } else if (!_payA && cases[_caseNum].compensationB > 0) {
+        } else if (!_payA) {
             // 收取手續費
-            uint256 feeB = (cases[_caseNum].compensationB * feeRateForStakeCompensation) / 10000;
             // safeTransferFrom compensationToken to this contract
-            compensationToken.safeTransferFrom(msg.sender, address(this), feeB);
+            compensationToken.safeTransferFrom(msg.sender, address(this), stakeFee);
             emit CaseStaked(_caseNum, msg.sender, cases[_caseNum].compensationB);
         }
     }
@@ -135,7 +132,7 @@ contract RealContract is
     }
 
     // 案件投票
-    function vote(uint256 _caseNum, address _voteFor) public payable onlyVoter onlyRunning nonReentrant {
+    function vote(uint256 _caseNum, address _voteFor) public onlyVoter onlyRunning nonReentrant {
         require(cases[_caseNum].status == CaseStatus.Voting, "Case is not voting");
 
         require(
@@ -144,16 +141,13 @@ contract RealContract is
         );
 
         require(cases[_caseNum].voterIsVoted[msg.sender] == false, "Voter has already voted");
+
         cases[_caseNum].voterIsVoted[msg.sender] = true;
         cases[_caseNum].voters.push(msg.sender);
         cases[_caseNum].voterVotes[_voteFor]++;
 
-        if (address(voteToken) != address(0)) {
-            voteToken.safeTransferFrom(msg.sender, address(this), voteTokenAmount);
-        } else {
-            //native token
-            require(msg.value >= voteTokenAmount, "Insufficient vote token");
-        }
+        voteToken.safeTransferFrom(msg.sender, address(this), voteTokenAmount);
+        cases[_caseNum].votePool += voteTokenAmount;
 
         emit CaseVoted(_caseNum, msg.sender, _voteFor);
     }
@@ -165,40 +159,35 @@ contract RealContract is
                 || msg.sender == governance,
             "Sender is not a participant or governance"
         );
-        require(
-            cases[_caseNum].status == CaseStatus.WaitingForExecution
-                || (
-                    cases[_caseNum].status == CaseStatus.Voting
-                        && block.timestamp > cases[_caseNum].votingStartTime + cases[_caseNum].votingDuration
-                ),
-            "Case is not waiting for execution"
-        );
 
         _executeCase(_caseNum);
 
-        uint256 totalCompensation = cases[_caseNum].compensationA + cases[_caseNum].compensationB;
-
         // 收取手續費
-        uint256 fee = (totalCompensation * feeRateForExecuteCase) / 10000;
-        uint256 netCompensation = totalCompensation - fee;
+        uint256 totalExistingCompensation = cases[_caseNum].existingCompensationA + cases[_caseNum].existingCompensationB;
+        uint256 executeFee = (totalExistingCompensation * feeRateForExecuteCase) / 10000;
+        uint256 remainingCompensation = totalExistingCompensation - executeFee;
+        uint256 totalVotes = cases[_caseNum].voterVotes[cases[_caseNum].participantA]
+            + cases[_caseNum].voterVotes[cases[_caseNum].participantB];
 
-        // 根據分配模式進行分配
-        if (cases[_caseNum].allocationMode == 0) {
-            // 模式0: 勝者全拿
-            if (cases[_caseNum].winner == cases[_caseNum].participantA) {
-                compensationToken.transfer(cases[_caseNum].participantA, netCompensation);
-            } else if (cases[_caseNum].winner == cases[_caseNum].participantB) {
-                compensationToken.transfer(cases[_caseNum].participantB, netCompensation);
-            }
-        } else {
-            // 模式1: 按得票數比例分配
-            uint256 totalVotes = cases[_caseNum].voterVotes[cases[_caseNum].participantA]
-                + cases[_caseNum].voterVotes[cases[_caseNum].participantB];
-
-            if (totalVotes > 0) {
+        // 如果沒有任何人投票，則直接將保證金全數歸還，不抽取手續費
+        if (totalVotes == 0) {
+            compensationToken.transfer(cases[_caseNum].participantA, cases[_caseNum].existingCompensationA);
+            compensationToken.transfer(cases[_caseNum].participantB, cases[_caseNum].existingCompensationB);
+        }else if(totalVotes > 0){
+            
+            // 根據分配模式進行分配
+            if (cases[_caseNum].allocationMode == 0) {
+                // 模式0: 勝者全拿
+                if (cases[_caseNum].winner == cases[_caseNum].participantA) {
+                    compensationToken.transfer(cases[_caseNum].participantA, remainingCompensation);
+                } else if (cases[_caseNum].winner == cases[_caseNum].participantB) {
+                    compensationToken.transfer(cases[_caseNum].participantB, remainingCompensation);
+                }
+            } else {
+                // 模式1: 按得票數比例分配
                 uint256 participantAShare =
-                    (netCompensation * cases[_caseNum].voterVotes[cases[_caseNum].participantA]) / totalVotes;
-                uint256 participantBShare = netCompensation - participantAShare;
+                    (remainingCompensation * cases[_caseNum].voterVotes[cases[_caseNum].participantA]) / totalVotes;
+                uint256 participantBShare = remainingCompensation - participantAShare;
 
                 if (participantAShare > 0) {
                     compensationToken.transfer(cases[_caseNum].participantA, participantAShare);
@@ -206,23 +195,13 @@ contract RealContract is
                 if (participantBShare > 0) {
                     compensationToken.transfer(cases[_caseNum].participantB, participantBShare);
                 }
+                
             }
         }
 
         emit CaseExecuted(_caseNum, cases[_caseNum].winner);
     }
 
-    // 檢查案件
-    function _checkCase(CaseInit calldata _case) internal view {
-        require(_case.compensationA > 0 && _case.compensationB > 0, "Compensation must be greater than 0");
-
-        require(_case.votingDuration > 0, "Voting duration must be greater than 0");
-
-        require(
-            _case.winnerIfEqualVotes == _case.participantA || _case.winnerIfEqualVotes == _case.participantB,
-            "Winner if equal votes must be a participant"
-        );
-    }
 
     function cancelCase(uint256 _caseNum) public onlyRunning {
         require(

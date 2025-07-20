@@ -4,15 +4,15 @@ A smart contract system for managing cases, voting, and compensation.
 
 ## Contract Addresses (Sepolia)
 
-- RealContract: [0x99cD21960805a4A63D1F3694b6e8C30C59288f48](https://sepolia.etherscan.io/address/0x99cD21960805a4A63D1F3694b6e8C30C59288f48)
-- Voter: [0x3f8214F002D93dFe584104122b7f6a72CF8fd498](https://sepolia.etherscan.io/address/0x3f8214F002D93dFe584104122b7f6a72CF8fd498)
-- FakeERC20: [0xd9405d322951BF6a0185435B7A08525C0a32f219](https://sepolia.etherscan.io/address/0xd9405d322951BF6a0185435B7A08525C0a32f219)
+- RealContract: [0xe2637738db03dbdaed8853502bdd0d1fe95bcd11](https://sepolia.etherscan.io/address/0xe2637738db03dbdaed8853502bdd0d1fe95bcd11)
+- Voter: [0x22dad1ada86e7e37aae2792055ab1c9c32fe2c16](https://sepolia.etherscan.io/address/0x22dad1ada86e7e37aae2792055ab1c9c32fe2c16)
+- FakeERC20: [0x2f383a0b62f37e56ffc8dfc84a178f0324365b3e](https://sepolia.etherscan.io/address/0x2f383a0b62f37e56ffc8dfc84a178f0324365b3e)
 
 ## Participants
 
-- Participant A: 0x565d490806A6D8eF532f4d29eC00EF6aAC71A17A
-- Participant B: 0x8d521dCae9C1f7353a96D1510B3B4F9f83413bC9
-- Deployer: 0xcafCE5363A2dEC41e0597B6B3c6c1A11ab219698
+- Test Participant A: 0x57a0cd579B0fb24f3282F69680eeE85E3e5bCD68
+- Test Participant B: 0x137C941D1097488cc9B454c362c768B7A837DA22
+- Deployer: 0xBB4d7e4e3d0b3927f2829d6BE1D16B6D6fe63fA3
 
 ## Token Balances
 
