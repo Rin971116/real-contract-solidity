@@ -169,8 +169,8 @@ contract RealContractTest is Test {
         vm.prank(voter1);
         vm.expectEmit(true, true, false, false);
         emit IRealContract.CaseVoted(0, voter1, participantA);
-        realContract.vote{value: 1 ether}(0, participantA);
-        assertEq(realContract.getCaseVoterVotes(0, participantA), 1);
+        realContract.vote(0, participantA);
+        assertEq(realContract.getCaseNumberOfVotes(0, voter1), 1);
     }
 
     // 測試非投票者投票
@@ -205,7 +205,7 @@ contract RealContractTest is Test {
         // 非投票者嘗試投票
         vm.prank(participantA); // 非投票者地址
         vm.expectRevert("Sender is not a voter");
-        realContract.vote{value: 1 ether}(0, participantA);
+        realContract.vote(0, participantA);
     }
 
     // 測試投票兩次
@@ -236,10 +236,10 @@ contract RealContractTest is Test {
         realContract.startCaseVoting(0);
 
         vm.prank(voter1);
-        realContract.vote{value: 1 ether}(0, participantA);
+        realContract.vote(0, participantA);
         vm.prank(voter1);
         vm.expectRevert("Voter has already voted");
-        realContract.vote{value: 1 ether}(0, participantA);
+        realContract.vote(0, participantA);
     }
 
     // 測試投票代幣不足
@@ -275,7 +275,7 @@ contract RealContractTest is Test {
         // 嘗試使用不足的投票代幣
         vm.prank(voter1);
         vm.expectRevert("Insufficient vote token");
-        realContract.vote{value: 0.5 ether}(0, participantA);
+        realContract.vote(0, participantA);
     }
 
     // 測試執行案件
@@ -309,7 +309,7 @@ contract RealContractTest is Test {
         vm.stopPrank();
 
         vm.prank(voter1);
-        realContract.vote{value: 1 ether}(0, participantA);
+        realContract.vote(0, participantA);
 
         vm.startPrank(participantB);
         vm.warp(block.timestamp + 1 days + 1);

@@ -4,9 +4,10 @@ A smart contract system for managing cases, voting, and compensation.
 
 ## Contract Addresses (Sepolia)
 
-- RealContract: [0xe2637738db03dbdaed8853502bdd0d1fe95bcd11](https://sepolia.etherscan.io/address/0xe2637738db03dbdaed8853502bdd0d1fe95bcd11)
-- Voter: [0x22dad1ada86e7e37aae2792055ab1c9c32fe2c16](https://sepolia.etherscan.io/address/0x22dad1ada86e7e37aae2792055ab1c9c32fe2c16)
-- FakeERC20: [0x2f383a0b62f37e56ffc8dfc84a178f0324365b3e](https://sepolia.etherscan.io/address/0x2f383a0b62f37e56ffc8dfc84a178f0324365b3e)
+- RealContract: [0x7166b5aCE489950b7b89A6A4060290dD5Ec4eB31](https://sepolia.etherscan.io/address/0x7166b5aCE489950b7b89A6A4060290dD5Ec4eB31)
+- Voter: [0xE107c25a6939274Db7a3c10a6d0b75A700bA5cf2](https://sepolia.etherscan.io/address/0xE107c25a6939274Db7a3c10a6d0b75A700bA5cf2)
+- FakeERC20: [0xDdDd56A2028705e11Ab2c7C853387d560c134BD9](https://sepolia.etherscan.io/address/0xDdDd56A2028705e11Ab2c7C853387d560c134BD9)
+- VoteToken: [0x7AAB8e06E9BbCC3265D5f3225995c60a24aD0a62](https://sepolia.etherscan.io/address/0x7AAB8e06E9BbCC3265D5f3225995c60a24aD0a62)
 
 ## Participants
 
@@ -29,8 +30,8 @@ A smart contract system for managing cases, voting, and compensation.
 ## Features
 
 - Case Management: Create, stake, and execute cases
-- Voting System: Secure voting mechanism with token-based validation
-- Compensation System: Automated compensation distribution based on voting results
+- Voting System: Secure voting mechanism with separate voting tokens
+- Compensation System: Automated compensation distribution using FakeERC20 tokens
 
 ## Development Setup
 
@@ -56,11 +57,12 @@ forge script script/Deploy.s.sol:Deploy --rpc-url $SEPOLIA_RPC_URL --broadcast -
 
 ## Contract Architecture
 
-The system consists of three main contracts:
+The system consists of four main contracts:
 
 1. `RealContract`: Main contract handling case management and execution
 2. `Voter`: Manages voter registration and validation
-3. `FakeERC20`: ERC20 token for compensation and voting
+3. `FakeERC20`: ERC20 token for compensation
+4. `VoteToken`: ERC20 token for voting rights
 
 ## License
 

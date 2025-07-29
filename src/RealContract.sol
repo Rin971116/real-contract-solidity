@@ -97,7 +97,7 @@ contract RealContract is
         _addCase(_case);
     }
 
-    // stake compensation
+    // 存入保證金
     function stakeCompensation(uint256 _caseNum, bool _payA, uint256 _amount) public onlyRunning nonReentrant {
         uint256 stakeFee = (_amount * feeRateForStakeCompensation) / 10000;
         _stakeCompensation(_caseNum, compensationToken, _payA, _amount - stakeFee);
@@ -144,7 +144,8 @@ contract RealContract is
 
         cases[_caseNum].voterIsVoted[msg.sender] = true;
         cases[_caseNum].voters.push(msg.sender);
-        cases[_caseNum].voterVotes[_voteFor]++;
+        cases[_caseNum].numberOfVotes[_voteFor]++;
+        cases[_caseNum].voterChoice[msg.sender] = _voteFor;
 
         voteToken.safeTransferFrom(msg.sender, address(this), voteTokenAmount);
         cases[_caseNum].votePool += voteTokenAmount;
@@ -166,8 +167,8 @@ contract RealContract is
         uint256 totalExistingCompensation = cases[_caseNum].existingCompensationA + cases[_caseNum].existingCompensationB;
         uint256 executeFee = (totalExistingCompensation * feeRateForExecuteCase) / 10000;
         uint256 remainingCompensation = totalExistingCompensation - executeFee;
-        uint256 totalVotes = cases[_caseNum].voterVotes[cases[_caseNum].participantA]
-            + cases[_caseNum].voterVotes[cases[_caseNum].participantB];
+        uint256 totalVotes = cases[_caseNum].numberOfVotes[cases[_caseNum].participantA]
+            + cases[_caseNum].numberOfVotes[cases[_caseNum].participantB];
 
         // 如果沒有任何人投票，則直接將保證金全數歸還，不抽取手續費
         if (totalVotes == 0) {
@@ -186,7 +187,7 @@ contract RealContract is
             } else {
                 // 模式1: 按得票數比例分配
                 uint256 participantAShare =
-                    (remainingCompensation * cases[_caseNum].voterVotes[cases[_caseNum].participantA]) / totalVotes;
+                    (remainingCompensation * cases[_caseNum].numberOfVotes[cases[_caseNum].participantA]) / totalVotes;
                 uint256 participantBShare = remainingCompensation - participantAShare;
 
                 if (participantAShare > 0) {
@@ -200,6 +201,19 @@ contract RealContract is
         }
 
         emit CaseExecuted(_caseNum, cases[_caseNum].winner);
+    }
+    
+
+    function claimVotePool(uint256 _caseNum) public onlyRunning onlyVoter{
+        require(cases[_caseNum].status == CaseStatus.Executed, "Case is not executed");
+        require(cases[_caseNum].voterChoice[msg.sender] == cases[_caseNum].winner, "Voter is not the winner");
+        require(cases[_caseNum].voterHasClaimed[msg.sender] == false, "Voter has already claimed");
+        uint256 claimAmount = cases[_caseNum].votePool / cases[_caseNum].numberOfVotes[cases[_caseNum].winner];
+        voteToken.safeTransfer(msg.sender, claimAmount);
+        cases[_caseNum].votePool -= claimAmount;
+        cases[_caseNum].voterHasClaimed[msg.sender] = true;
+
+        emit VotePoolClaimed(_caseNum, msg.sender, voteTokenAmount);
     }
 
 

@@ -80,10 +80,12 @@ abstract contract CaseManager is Governance, ICaseManager {
         caseResult.existingCompensationA = _case.existingCompensationA;
         caseResult.existingCompensationB = _case.existingCompensationB;
         caseResult.caseStatus = _case.status;
-        caseResult.voteCountA = _case.voterVotes[_case.participantA];
-        caseResult.voteCountB = _case.voterVotes[_case.participantB];
+        caseResult.voteCountA = _case.numberOfVotes[_case.participantA];
+        caseResult.voteCountB = _case.numberOfVotes[_case.participantB];
         caseResult.allocationMode = _case.allocationMode;
         caseResult.voteEnded = _case.votingDuration + _case.votingStartTime < block.timestamp;
+        caseResult.voteChoice = _case.voterChoice[msg.sender];
+        caseResult.voterHasClaimed = _case.voterHasClaimed[msg.sender];
 
         if (caseResult.voteCountA > caseResult.voteCountB) {
             caseResult.currentWinner = _case.participantA;
@@ -200,8 +202,8 @@ abstract contract CaseManager is Governance, ICaseManager {
         return cases[caseNum].voters.length;
     }
 
-    function getCaseVoterVotes(uint256 caseNum, address voter) public view returns (uint256) {
-        return cases[caseNum].voterVotes[voter];
+    function getCaseNumberOfVotes(uint256 caseNum, address voter) public view returns (uint256) {
+        return cases[caseNum].numberOfVotes[voter];
     }
 
     function getCaseIsPaidA(uint256 caseNum) public view returns (bool) {
@@ -215,4 +217,17 @@ abstract contract CaseManager is Governance, ICaseManager {
     function getCaseNumber() public view returns (uint256) {
         return currentCaseNum + 1;
     }
+
+    function getCaseVoterChoice(uint256 caseNum, address voter) public view returns (address) {
+        return cases[caseNum].voterChoice[voter];
+    }
+
+    function getCaseVoterHasClaimed(uint256 caseNum, address voter) public view returns (bool) {
+        return cases[caseNum].voterHasClaimed[voter];
+    }
+
+    function getCaseAllocationMode(uint256 caseNum) public view returns (uint256) {
+        return cases[caseNum].allocationMode;
+    }
+
 }

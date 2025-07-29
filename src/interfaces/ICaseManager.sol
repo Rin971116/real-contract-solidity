@@ -45,14 +45,18 @@ interface ICaseManager {
         uint256 votingStartTime;
         // voting duration
         uint256 votingDuration;
-        // 已投票者
-        mapping(address => bool) voterIsVoted;
         // 投票者
         address[] voters;
-        // 紀錄得票數
-        mapping(address => uint256) voterVotes;
+        // 投票者選擇
+        mapping(address => address) voterChoice;
+        // 已投票者 address:投票者地址
+        mapping(address => bool) voterIsVoted;
+        // 紀錄得票數 address:合約人地址
+        mapping(address => uint256) numberOfVotes;
         // 投票獎池
         uint256 votePool;
+        // 是否已領取投票獎池
+        mapping(address => bool) voterHasClaimed;
         // 分配模式(0: 勝者全拿, 1: 按得票數比例分配)
         uint256 allocationMode;
     }
@@ -92,6 +96,10 @@ interface ICaseManager {
         uint256 voteCountA;
         // 得票數B
         uint256 voteCountB;
+        // 投票選擇
+        address voteChoice;
+        // 投票者是否已領取投票獎池
+        bool voterHasClaimed;
         // 是否結束投票
         bool voteEnded;
         // 分配模式(0: 勝者全拿, 1: 按得票數比例分配)
@@ -121,7 +129,13 @@ interface ICaseManager {
 
     function getCaseVotersCount(uint256 caseNum) external view returns (uint256);
 
-    function getCaseVoterVotes(uint256 caseNum, address voter) external view returns (uint256);
+    function getCaseNumberOfVotes(uint256 caseNum, address voter) external view returns (uint256);
 
     function getCaseIsPaidA(uint256 caseNum) external view returns (bool);
+
+    function getCaseVoterChoice(uint256 caseNum, address voter) external view returns (address);
+
+    function getCaseVoterHasClaimed(uint256 caseNum, address voter) external view returns (bool);
+
+    function getCaseAllocationMode(uint256 caseNum) external view returns (uint256);
 }

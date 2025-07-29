@@ -8,6 +8,7 @@ interface IRealContract {
     event CaseVoted(uint256 indexed caseNum, address indexed voter, address indexed voteFor);
     event CaseExecuted(uint256 indexed caseNum, address indexed winner);
     event CaseRolledBack(uint256 indexed caseNum);
+    event VotePoolClaimed(uint256 indexed caseNum, address indexed voter, uint256 amount);
 
     // 合約狀態事件
     event ContractStatusChanged(bool running);
